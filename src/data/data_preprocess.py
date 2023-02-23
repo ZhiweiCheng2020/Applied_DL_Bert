@@ -4,7 +4,8 @@ import random
 import torch
 import sys
 import os
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
+torch.random.manual_seed(42)
 import copy
 import re
 import torch.nn.functional as F
@@ -64,30 +65,30 @@ class TokenTransform:
         # data for training
         token_data, mask_pos_data, mask_token_data = map(torch.LongTensor, zip(*seq_data))
         
-        # decomposite protein info
-        protein_info = list(map(lambda x: re.split('\W+', x)[1:], self.protein_type))
-        tmp_info = list(zip(*protein_info))
-        
-        subs = {"A":0, "B":1, "C":2}
-        # code0 info: A-->0, B-->1, C-->2
-        code0_tmp = torch.tensor([subs[item] for item in tmp_info[0]]).to(torch.int64)
+        code0_tmp = torch.tensor(self.code0).to(torch.int64)
         code0 = F.one_hot(code0_tmp, num_classes=3)
-        
-        code1 = torch.tensor([int(item) for item in tmp_info[1]]).to(torch.int64)
-        code2 = torch.tensor([int(item) for item in tmp_info[2]]).to(torch.int64)
+        code1_tmp = torch.tensor(self.code1).to(torch.int64)
+        code1 = F.one_hot(code1_tmp, num_classes=64) #63+1
+        code2_tmp = torch.tensor(self.code2).to(torch.int64)
+        code2 = code2_tmp
+        # code2 = F.one_hot(code2_tmp, num_classes=1027) #1026+1
         
         pad_mask = self.create_padding_mask(token_data)
         # print(token_data.shape, mask_pos_data.shape, mask_token_data.shape, pad_mask.shape)
         return token_data, mask_pos_data, mask_token_data, code0, code1, code2, pad_mask
         
-    def __call__(self, seqs_token, seq_dict, max_seq_len, protein_type):
+    def __call__(self, seqs_token, seq_dict, max_seq_len, code0, code1, code2):
         self.seqs_token = seqs_token
         self.seq_dict = seq_dict
         self.max_seq_len = max_seq_len
-        if not isinstance(protein_type, list):
-            self.protein_type = [protein_type]
+        if not isinstance(code0, list):
+            self.code0 = [code0]
+            self.code1 = [code1]
+            self.code2 = [code2]
         else:
-            self.protein_type = protein_type
+            self.code0 = code0
+            self.code1 = code1
+            self.code2 = code2
         return self.mask_seqs()
         
 
@@ -102,7 +103,9 @@ class seq_dataset(Dataset):
         if max(seqs_range) < df.shape[0]:
             df = df.iloc[seqs_range, :]
         df.reset_index(inplace=True)
-        self.protein_name = df["allele_full_name"].to_list()    
+        self.code0 = df["code0"].to_list()    
+        self.code1 = df["code1"].to_list()    
+        self.code2 = df["code2"].to_list()    
         self.seqs = df["domain_alpha1_2_sequence"].to_list()        
         self.n_samples = len(self.seqs)
         self.transform = transform
@@ -136,11 +139,15 @@ class seq_dataset(Dataset):
 
     def __getitem__(self, index):
         seq_sample = copy.deepcopy(self.seqs_token[index])
-        protein_type = copy.deepcopy(self.protein_name[index])
+        code0 = copy.deepcopy(self.code0[index])
+        code1 = copy.deepcopy(self.code1[index])
+        code2 = copy.deepcopy(self.code2[index])
         mask_seq_sample = self.transform(seqs_token =seq_sample, 
                                     seq_dict=self.seq_dict, 
                                     max_seq_len=self.max_seq_len,
-                                    protein_type=protein_type, 
+                                    code0=code0,
+                                    code1=code1,
+                                    code2=code2,
                                     )
         return mask_seq_sample
 

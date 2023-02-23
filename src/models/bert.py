@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import copy
+torch.random.manual_seed(42)
 
 class input_embedding(nn.Module):
     def __init__(self, ebd_dim, vocab_size, max_seq_len, num_seg=2) -> None:
@@ -25,71 +26,54 @@ class input_embedding(nn.Module):
         Bert_ebd = self.norm(Bert_ebd)
         return Bert_ebd
     
-
 class MultiHeadAttention(nn.Module):
-    def __init__(self, ebd_dim, num_head, dropout_rate=0.1):
+    def __init__(self, ebd_dim, num_head):
         super().__init__()
         self.ebd_dim = ebd_dim
         self.num_head = num_head
         self.head_dim = ebd_dim // num_head
-        self.dropout_rate = dropout_rate
         assert self.head_dim * num_head == self.ebd_dim, "ebd_dim/num_head should be an integer!"
         
         # Q_linear, K_linear, V_linear: (ebd_dim, ebd_dim)
         self.Q_linear = nn.Linear(ebd_dim, ebd_dim)
         self.K_linear = nn.Linear(ebd_dim, ebd_dim)
         self.V_linear = nn.Linear(ebd_dim, ebd_dim)
-        self.attention_linear = nn.Linear(ebd_dim, ebd_dim)
+        self.atten_linear = nn.Linear(ebd_dim, ebd_dim)
         
-    def forward(self, Q0, K0, V0, padding_mask, training):
-        # (batch_size, seq_len, ebd_dim)*(ebd_dim,ebd_dim)=(batch_size, seq_len,head_dim*num_head)
-        Q = self.Q_linear(Q0)
-        K = self.K_linear(K0)
-        V = self.V_linear(V0)
+    def forward(self, W_Q, W_K, W_V, padding_mask):
+        batch_size, seq_len, _ = W_Q.size()
+        # (batch_size, seq_len, num_head, head_dim)
+        Q = self.Q_linear(W_Q).view(batch_size, seq_len, self.num_head, self.head_dim)
+        K = self.K_linear(W_K).view(batch_size, seq_len, self.num_head, self.head_dim)
+        V = self.V_linear(W_V).view(batch_size, seq_len, self.num_head, self.head_dim)
         
-        batch_size, seq_len, ebd_dim = Q0.size()
-        _, source_len, _ = K0.size()
-        # self.head_dim
+        #(num_head, batch_size,seq_len,head_dim)
+        Q = Q.view(self.num_head, batch_size, seq_len, self.head_dim)
+        K = K.view(self.num_head, batch_size, seq_len, self.head_dim)
+        V = V.view(self.num_head, batch_size, seq_len, self.head_dim)
         
-        #(self.num_head*batch_size,seq_len or source_len,self.head_dim)  
-        Q = Q.view(self.num_head*batch_size, seq_len, self.head_dim)
-        K = K.view(self.num_head*batch_size, source_len, self.head_dim)
-        V = V.view(self.num_head*batch_size, source_len, self.head_dim)
-        
-        # batch matrix-matrix product of matrices, normalized
-        attention_weight = torch.bmm(Q, K.transpose(1, 2)) / np.sqrt(self.head_dim)
-        # (self.num_head*batch_size,seq_len,self.head_dim) * (self.num_head*batch_size,self.head_dim,source_len)
-        # --> (self.num_head*batch_size,seq_len,source_len)
+        # (num_head, batch_size,seq_len,seq_len)
+        atten_w = torch.matmul(Q, K.transpose(-1, -2)) / np.sqrt(self.head_dim) 
 
-        # add padding_mask: (batch_size, source_len)
-        assert batch_size, source_len == padding_mask.size()
-        # print("padding is okay.")
-        # print("attention_weight",attention_weight.shape)
-        attention_weight = attention_weight.view(batch_size, self.num_head, seq_len, source_len)
-        padding_mask = padding_mask.unsqueeze(1).unsqueeze(2) #(batch_size, 1, 1, source_len)
+        # add padding_mask: (batch_size, seq_len)
+        assert batch_size, seq_len == padding_mask.size()
+        padding_mask = padding_mask.unsqueeze(0).unsqueeze(2) #(1, batch_size, 1, seq_len)
         # pay -inf attention on the [PAD] tokens
-        attention_weight = attention_weight.masked_fill(mask=padding_mask, value=float("-inf"))
-        attention_weight = attention_weight.view(-1, seq_len, source_len) 
-        #(self.num_head*batch_size,seq_len,source_len)
-        
+        atten_w = atten_w.masked_fill(mask=padding_mask, value=float("-inf"))
+
         # apply softmax and dropout
-        attention_weight = F.softmax(attention_weight, dim=-1) #apply softmax along last dim
-        attention_weight = F.dropout(attention_weight, self.dropout_rate, training=training) # apply dropout only when training
-        attention = torch.bmm(attention_weight, V)
-        # (self.num_head*batch_size,seq_len,source_len) * (self.num_head*batch_size,source_len,self.head_dim)
-        # --> (self.num_head*batch_size,seq_len,self.head_dim)
-        attention = attention.transpose(0, 1).contiguous().view(seq_len, batch_size, self.num_head*self.head_dim)
-        attention = attention.view(batch_size, seq_len, self.num_head*self.head_dim) # the same dim as ebd
+        atten_w = F.softmax(atten_w, dim=-1) #apply softmax along last dim
+        atten_w = torch.matmul(atten_w, V) #(num_head, batch_size,seq_len,head_dim)
+        atten_w = atten_w.view(batch_size, seq_len, self.num_head, self.head_dim)
+        atten_w = atten_w.view(batch_size, seq_len, self.ebd_dim)
         
-        Z = self.attention_linear(attention) # linear combination of multiple z, (batch_size, seq_len, self.num_head*self.head_dim)
-        # print("Z.shape: ", Z.shape)
+        Z = self.atten_linear(atten_w) # linear combination of multiple z, (batch_size, seq_len, ebd_dim)
         return Z
 
 class Encoder_Layer(nn.Module):
     def __init__(self, ebd_dim, num_head, dim_feedforward, dropout_rate=0.1):
         super().__init__()
-        self.attention = MultiHeadAttention(ebd_dim=ebd_dim, num_head=num_head,
-                                         dropout_rate=dropout_rate)
+        self.attention = MultiHeadAttention(ebd_dim=ebd_dim, num_head=num_head)
         
         # define other sublayers in encoder
         self.dropout1 = nn.Dropout(dropout_rate)
@@ -115,7 +99,7 @@ class Encoder_Layer(nn.Module):
         
         # Multi-head attention 
         source_attn = self.attention(source_input, source_input, source_input, 
-                              padding_mask=source_pad_mask, training=training) #[batch_size,source_len,ebd_dim]
+                              padding_mask=source_pad_mask) #[batch_size,source_len,ebd_dim]
  
         # Residual Dropout 1
         source_input = source_input + self.dropout1(source_attn)  # residual connection
@@ -157,8 +141,8 @@ class Bert(nn.Module):
                              num_layer=num_layer)
         self.linear = nn.Linear(ebd_dim, vocab_size, bias=False)
         self.linear0 = nn.Linear(vocab_size, 3, bias=False)
-        self.linear1 = nn.Linear(vocab_size, 1, bias=False)
-        self.linear2 = nn.Linear(vocab_size, 1, bias=False)
+        self.linear1 = nn.Linear(vocab_size, 64, bias=False)
+        self.linear2 = nn.Linear(vocab_size, 1027, bias=False)
         
 
     def forward(self, input, padding_mask, seg=None, training=True):
@@ -173,7 +157,7 @@ class Bert(nn.Module):
         MaskedLM = encoder[:,1:,:] # for masked token prediction
         
         code0_pred = nn.LogSoftmax(dim=-1)(self.linear0(NSP)) # code0: 3-class
-        code1_pred = self.linear1(NSP) # code1: regression
+        code1_pred = nn.LogSoftmax(dim=-1)(self.linear1(NSP)) # code1: 63-class
         code2_pred = self.linear2(NSP) # code2: regression
         
         return MaskedLM, code0_pred, code1_pred, code2_pred
