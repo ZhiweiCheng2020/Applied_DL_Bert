@@ -70,7 +70,7 @@ class TokenTransform:
         code1_tmp = torch.tensor(self.code1).to(torch.int64)
         code1 = F.one_hot(code1_tmp, num_classes=64) #63+1
         code2_tmp = torch.tensor(self.code2).to(torch.int64)
-        code2 = code2_tmp
+        code2 = F.one_hot(code2_tmp, num_classes=1027) #1026+1
         # code2 = F.one_hot(code2_tmp, num_classes=1027) #1026+1
         
         pad_mask = self.create_padding_mask(token_data)

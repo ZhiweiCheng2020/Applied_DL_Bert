@@ -10,7 +10,7 @@ import os
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 import math
-from sklearn.model_selection import KFold
+# from sklearn.model_selection import KFold
 torch.random.manual_seed(42)
 g = torch.Generator()
 g.manual_seed(42)
@@ -35,7 +35,7 @@ dim_feedforward = ebd_dim * 4  # 4*ebd_dim, FeedForward dimension
 
 # training parameters
 lr=0.0002
-num_epochs = 10
+num_epochs = 100
 batch_size = 64
 verbose = True
 
@@ -93,8 +93,9 @@ for epoch in range(num_epochs):
         loss_maskLM = CE_loss(MaskedLM.transpose(1,2), mask_token_data)
         loss_code0 = CE_loss(code0_pred, code0.float())
         loss_code1 = CE_loss(code1_pred, code1.float())
+        loss_code2 = CE_loss(code2_pred, code2.float())
         # curr_loss = loss_maskLM + loss_code0
-        curr_loss = loss_maskLM + loss_code0 + loss_code1
+        curr_loss = loss_maskLM + loss_code0 + loss_code1 + loss_code2
         curr_loss.backward()
         optimizer.step()
         train_loss += curr_loss.item()
@@ -122,16 +123,19 @@ for epoch in range(num_epochs):
             loss_maskLM = CE_loss(MaskedLM.transpose(1,2), mask_token_data)
             loss_code0 = CE_loss(code0_pred, code0.float())
             loss_code1 = CE_loss(code1_pred, code1.float())
+            loss_code2 = CE_loss(code2_pred, code2.float())
             # curr_loss = loss_maskLM + loss_code0
-            curr_loss = loss_maskLM + loss_code0 + loss_code1
+            curr_loss = loss_maskLM + loss_code0 + loss_code1 + loss_code2
             val_loss += curr_loss.item()
             
             if ((i+1) % 10 == 0) and verbose:
                 num_iters = math.ceil(len(val_dataset)/batch_size)
-                print(f'Epoch: {epoch+1}/{num_epochs}, Step {i+1}/{num_iters}\
+                print(f'Epoch: {epoch+1}/{num_epochs}, Step {i+1}/{num_iters}, validation loss,\
                     loss_maskLM: {loss_maskLM.item():.3f}\
                         loss_code0: {loss_code0.item():.3f}\
-                            loss_code1: {loss_code1.item():.3f}')
+                            loss_code1: {loss_code1.item():.3f}\
+                            loss_code2: {loss_code2.item():.3f}'
+                            )
             
     # record train loss
     epoch_val_loss = val_loss/len(val_loader)
