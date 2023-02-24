@@ -1,4 +1,4 @@
-Applying Bert in Protein Classification
+Applying BERT in Protein Classification
 ==============================
 
 - This is a couse project (Applied Deep Learning) provided by LMU. The project is supervised by Emilio Dorigatti.
