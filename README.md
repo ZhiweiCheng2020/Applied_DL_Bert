@@ -3,9 +3,9 @@ Applying BERT in Protein Classification
 
 - This is a couse project (Applied Deep Learning) provided by LMU. The project is supervised by Emilio Dorigatti.
 
-- The protein sequence determine their properties. Therefore, we can use the sequantial information to classify the proteins.
+- The protein sequence order determines their properties. Therefore, we can use the sequantial information to classify the proteins.
 
-- If we treat each component as the letter/word in text, the protein classification is similar to text classification. 
+- If we treat each component as the letter/word in text, the protein classification is similar to text classification problem. 
 
 - In this project, we applied a well-know NLP model, BERT (https://arxiv.org/abs/1810.04805), to dig information from protein sequences and predict their types.
 
