@@ -2,8 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+np.random.seed(42)
 import copy
 torch.random.manual_seed(42)
+g = torch.Generator()
+g.manual_seed(42)
 
 class input_embedding(nn.Module):
     def __init__(self, ebd_dim, vocab_size, max_seq_len, num_seg=2) -> None:
@@ -32,7 +35,7 @@ class MultiHeadAttention(nn.Module):
         self.ebd_dim = ebd_dim
         self.num_head = num_head
         self.head_dim = ebd_dim // num_head
-        assert self.head_dim * num_head == self.ebd_dim, "ebd_dim/num_head should be an integer!"
+        assert self.head_dim * num_head == self.ebd_dim, "single-head embedding length should be an integer!"
         
         # Q_linear, K_linear, V_linear: (ebd_dim, ebd_dim)
         self.Q_linear = nn.Linear(ebd_dim, ebd_dim)
@@ -58,6 +61,7 @@ class MultiHeadAttention(nn.Module):
         # add padding_mask: (batch_size, seq_len)
         assert batch_size, seq_len == padding_mask.size()
         padding_mask = padding_mask.unsqueeze(0).unsqueeze(2) #(1, batch_size, 1, seq_len)
+        # padding_mask = padding_mask.unsqueeze(0).unsqueeze(3) #(1, batch_size, seq_len, 1), masking both rows and columns? 
         # pay -inf attention on the [PAD] tokens
         atten_w = atten_w.masked_fill(mask=padding_mask, value=float("-inf"))
 
@@ -71,7 +75,7 @@ class MultiHeadAttention(nn.Module):
         return Z
 
 class Encoder_Layer(nn.Module):
-    def __init__(self, ebd_dim, num_head, dim_feedforward, dropout_rate=0.1):
+    def __init__(self, ebd_dim, num_head, feedforward_dim, dropout_rate=0.1):
         super().__init__()
         self.attention = MultiHeadAttention(ebd_dim=ebd_dim, num_head=num_head)
         
@@ -79,8 +83,8 @@ class Encoder_Layer(nn.Module):
         self.dropout1 = nn.Dropout(dropout_rate)
         self.dropout2 = nn.Dropout(dropout_rate)
 
-        self.linear1 = nn.Linear(ebd_dim, dim_feedforward)
-        self.linear2 = nn.Linear(dim_feedforward, ebd_dim)
+        self.linear1 = nn.Linear(ebd_dim, feedforward_dim)
+        self.linear2 = nn.Linear(feedforward_dim, ebd_dim)
 
         self.norm1 = nn.LayerNorm(ebd_dim)
         self.norm2 = nn.LayerNorm(ebd_dim)
@@ -91,67 +95,63 @@ class Encoder_Layer(nn.Module):
     # def gelu(x):
     #     return x * 0.5 * (1.0 + torch.erf(x / np.sqrt(2.0)))
     
-    def forward(self, source_input, training, source_pad_mask=None):
-        """
-        source_input: [batch_size,source_len,ebd_dim]
-        source_pad_mask: [batch_size, source_len]
-        """
-        
+    def forward(self, input_ebd, pad_mask=None):
         # Multi-head attention 
-        source_attn = self.attention(source_input, source_input, source_input, 
-                              padding_mask=source_pad_mask) #[batch_size,source_len,ebd_dim]
+        # (batch_size,seq_len,ebd_dim)
+        attn = self.attention(input_ebd, input_ebd, input_ebd, 
+                              padding_mask=pad_mask) 
  
         # Residual Dropout 1
-        source_input = source_input + self.dropout1(source_attn)  # residual connection
-        source_input = self.norm1(source_input)   #[batch_size,source_len,ebd_dim]
+        input_ebd = input_ebd + self.dropout1(attn)  # residual connection
+        input_ebd = self.norm1(input_ebd)
 
         # Feed Forward
-        tmp = source_input
-        source_input = self.gelu(self.linear1(source_input))  # [source_len,batch_size,dim_feedforward]
-        source_input = self.linear2(source_input)  # #[batch_size,source_len,ebd_dim]
+        tmp = input_ebd
+        input_ebd = self.gelu(self.linear1(input_ebd))  # (batch_size,seq_len,ebd_dim) -> (batch_size,seq_len,feedforward_dim)
+        input_ebd = self.linear2(input_ebd)  # (batch_size,seq_len,feedforward_dim) -> (batch_size,seq_len,ebd_dim)
         
         # Residual Dropout 2
-        source_input = tmp + self.dropout2(source_input)
-        source_input = self.norm2(source_input)
-        return source_input  # #[batch_size,source_len,ebd_dim]
+        input_ebd = tmp + self.dropout2(input_ebd)
+        input_ebd = self.norm2(input_ebd)
+        return input_ebd  # (batch_size,seq_len,ebd_dim)
 
 class Encoder(nn.Module):
     def __init__(self, Encoder_Layer, num_layer):
         super().__init__()
-        self.layers = nn.ModuleList([copy.deepcopy(Encoder_Layer) for _ in range(num_layer)])
+        self.layers = nn.ModuleList([copy.deepcopy(Encoder_Layer) for _ in range(num_layer)]) # deepcopy all encoder layers
         self.num_layer = num_layer
 
-    def forward(self, source_input, training, source_pad_mask=None):
+    def forward(self, input_ebd, pad_mask=None):
     # connection of multiple encoder layer
         for sub_layer in self.layers:
-            source_input = sub_layer.forward(source_input=source_input, training=training, 
-                         source_pad_mask=source_pad_mask)
+            input_ebd = sub_layer.forward(input_ebd=input_ebd,
+                         pad_mask=pad_mask)
 
-        return source_input  # #[batch_size,source_len,ebd_dim]
+        return input_ebd  # (batch_size,seq_len,ebd_dim)
     
 class Bert(nn.Module):
-    def __init__(self, ebd_dim, vocab_size, max_seq_len, num_head, dim_feedforward,
+    def __init__(self, ebd_dim, vocab_size, max_seq_len, num_head, feedforward_dim,
                  num_layer, ):
         super().__init__() 
         self.ebd_model = input_embedding(ebd_dim=ebd_dim, 
             vocab_size=vocab_size, max_seq_len=max_seq_len)
         self.Encoder_Layer_model = Encoder_Layer(ebd_dim=ebd_dim, num_head=num_head,
-                        dim_feedforward=dim_feedforward,)
+                        feedforward_dim=feedforward_dim,)
         self.Encoder_model = Encoder(Encoder_Layer=self.Encoder_Layer_model, 
                              num_layer=num_layer)
         self.linear = nn.Linear(ebd_dim, vocab_size, bias=False)
-        self.linear0 = nn.Linear(vocab_size, 3, bias=False)
-        self.linear1 = nn.Linear(vocab_size, 64, bias=False)
-        self.linear2 = nn.Linear(vocab_size, 1027, bias=False)
+        self.linear0 = nn.Linear(vocab_size, 3, bias=False) # for code0: A/B/C
+        self.linear1 = nn.Linear(vocab_size, 64, bias=False) # for code1: 64 types
+        self.linear2 = nn.Linear(vocab_size, 1027, bias=False) # for code2: 1027 types
         
 
-    def forward(self, input, padding_mask, seg=None, training=True):
-        ebd = self.ebd_model(input=input, seg=seg) #(batch_size,source_len,ebd_dim)
-        encoder = self.Encoder_model(source_input=ebd,training=training,
-                        source_pad_mask=padding_mask)  #(batch_size,source_len,ebd_dim)
-        # (batch_size,source_len,ebd_dim) --> (batch_size,source_len,vocab_size)
+    def forward(self, input, padding_mask, seg=None):
+        ebd = self.ebd_model(input=input, seg=seg) #(batch_size,seq_len,ebd_dim)
+        encoder = self.Encoder_model(input_ebd=ebd,
+                        pad_mask=padding_mask)  #(batch_size,seq_len,ebd_dim)
+        # (batch_size,seq_len,ebd_dim) --> (batch_size,seq_len,vocab_size)
         encoder = self.linear(encoder)
-        encoder = nn.LogSoftmax(dim=-1)(encoder) #(batch_size,source_len,vocab_size)
+        encoder = nn.LogSoftmax(dim=-1)(encoder) #(batch_size,seq_len,vocab_size)
         
         NSP = encoder[:,0,:] # for protein classification
         MaskedLM = encoder[:,1:,:] # for masked token prediction

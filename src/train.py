@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import random
 random.seed(42)
+np.random.seed(42)
 import torch
 import sys
 import os
@@ -22,8 +23,8 @@ import data.data_preprocess as preprocess
 import models.bert as bert 
 
 
-len_all = 13478 # the length of the whole dataset
-# len_all = 1000 # the length of the whole dataset
+# len_all = 13478 # the length of the whole dataset
+len_all = 1000 # the length of the whole dataset
 
 # model parameters
 ebd_dim = 60 # Embedding Size
@@ -31,11 +32,11 @@ vocab_size = 24
 max_seq_len = 182 # maximum sequence length is 181, but we add a [CLS] before it.
 num_layer = 2 # number of Encoder of Encoder Layer
 num_head = 2 # number of heads in Multi-Head Attention
-dim_feedforward = ebd_dim * 4  # 4*ebd_dim, FeedForward dimension
+feedforward_dim = ebd_dim * 4  # 4*ebd_dim, FeedForward dimension
 
 # training parameters
 lr=0.0002
-num_epochs = 100
+num_epochs = 3
 batch_size = 64
 verbose = True
 
@@ -65,9 +66,8 @@ train_loss_history = []
 val_loss_history = []
 min_val_loss = np.inf # to track the minimal validation loss
 CE_loss = nn.CrossEntropyLoss()
-MAE_loss = nn.L1Loss()
 Bert_model = bert.Bert(ebd_dim=ebd_dim, num_head=num_head, vocab_size=vocab_size,
-                        dim_feedforward=dim_feedforward,
+                        feedforward_dim=feedforward_dim,
                         num_layer=num_layer, max_seq_len=max_seq_len)
 
 for epoch in range(num_epochs):
@@ -93,9 +93,9 @@ for epoch in range(num_epochs):
         loss_maskLM = CE_loss(MaskedLM.transpose(1,2), mask_token_data)
         loss_code0 = CE_loss(code0_pred, code0.float())
         loss_code1 = CE_loss(code1_pred, code1.float())
-        loss_code2 = CE_loss(code2_pred, code2.float())
+        # loss_code2 = CE_loss(code2_pred, code2.float())
         # curr_loss = loss_maskLM + loss_code0
-        curr_loss = loss_maskLM + loss_code0 + loss_code1 + loss_code2
+        curr_loss = loss_maskLM + loss_code0 + loss_code1
         curr_loss.backward()
         optimizer.step()
         train_loss += curr_loss.item()
@@ -123,9 +123,9 @@ for epoch in range(num_epochs):
             loss_maskLM = CE_loss(MaskedLM.transpose(1,2), mask_token_data)
             loss_code0 = CE_loss(code0_pred, code0.float())
             loss_code1 = CE_loss(code1_pred, code1.float())
-            loss_code2 = CE_loss(code2_pred, code2.float())
+            # loss_code2 = CE_loss(code2_pred, code2.float())
             # curr_loss = loss_maskLM + loss_code0
-            curr_loss = loss_maskLM + loss_code0 + loss_code1 + loss_code2
+            curr_loss = loss_maskLM + loss_code0 + loss_code1
             val_loss += curr_loss.item()
             
             if ((i+1) % 10 == 0) and verbose:
@@ -133,8 +133,7 @@ for epoch in range(num_epochs):
                 print(f'Epoch: {epoch+1}/{num_epochs}, Step {i+1}/{num_iters}, validation loss,\
                     loss_maskLM: {loss_maskLM.item():.3f}\
                         loss_code0: {loss_code0.item():.3f}\
-                            loss_code1: {loss_code1.item():.3f}\
-                            loss_code2: {loss_code2.item():.3f}'
+                            loss_code1: {loss_code1.item():.3f}'
                             )
             
     # record train loss
@@ -153,9 +152,10 @@ for epoch in range(num_epochs):
         torch.save(Bert_model.state_dict(),os.path.join(curr_path, "models", 'saved_model.pth'))
 
 # plot the loss
-plt.plot(train_loss_history, color="blue")
-plt.plot(val_loss_history, color="red")
+plt.plot(train_loss_history, color="blue", label = "Training Loss")
+plt.plot(val_loss_history, color="red", label = "Validation Loss")
+plt.legend(loc="upper right")
 plt.xlabel("Epochs")
-plt.ylabel("Training Loss")
+plt.ylabel("Train/Val Loss")
 # plt.show()
-plt.savefig(os.path.join(curr_path, "models", "train_val_loss.pdf"), dpi=150)
+plt.savefig(os.path.join(curr_path, "results", "train_val_loss.pdf"), dpi=150)

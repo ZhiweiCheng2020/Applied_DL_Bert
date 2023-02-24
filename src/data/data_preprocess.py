@@ -6,6 +6,9 @@ import sys
 import os
 from torch.utils.data import Dataset
 torch.random.manual_seed(42)
+np.random.seed(42)
+g = torch.Generator()
+g.manual_seed(42)
 import copy
 import re
 import torch.nn.functional as F
@@ -95,7 +98,7 @@ class TokenTransform:
 class seq_dataset(Dataset):
     def __init__(self, data_path, 
                  seqs_range = list(range(100)),
-                 seed = 1,
+                 seed = 42,
                  transform = TokenTransform(),):
         self.seed = seed # the seed for random.shuffle
         random.seed(self.seed)
