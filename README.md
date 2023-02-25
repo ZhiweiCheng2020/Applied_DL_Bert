@@ -1,4 +1,5 @@
 Applying BERT in Protein Classification
+![image](https://user-images.githubusercontent.com/34483849/221366597-066d0952-124f-4658-afbf-ea026806084d.png)
 ==============================
 
 - This is a couse project (Applied Deep Learning) provided by LMU. The project is supervised by Emilio Dorigatti.
@@ -8,6 +9,13 @@ Applying BERT in Protein Classification
 - If we treat each component as the letter/word in text, the protein classification is similar to text classification problem. 
 
 - In this project, we applied a well-know NLP model, BERT (https://arxiv.org/abs/1810.04805), to dig information from protein sequences and predict their types.
+
+- How to run the code:
+    1. find and open the script: src\train.py
+    2. set parameter *len_all*: the number of seqs you wuold like to include in model training
+    3. set parameter *lr*: learning rate
+    3. set parameter *num_epochs* and *batch_size*: number of epochs and batch size
+    3. set parameter *ebd_dim*:
 
 
 Project Organization
