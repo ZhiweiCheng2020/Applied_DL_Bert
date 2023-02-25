@@ -13,8 +13,8 @@ Applying BERT in Protein Classification
 - We use 15% of the data for testing, in the rest 85%, we use 80% for model training, and 20% for model validation.
 
 - How to run the code:
-    1. find and open the script: src\train.py (https://github.com/ZhiweiCheng2020/Applied_DL_Bert/blob/main/src/train.py);
-    2. set parameter *len_all*: the number of seqs you would like to include in model training;
+    1. find and open the script: src/train.py (https://github.com/ZhiweiCheng2020/Applied_DL_Bert/blob/main/src/train.py);
+    2. set parameter *len_all*: the number of seqs you would like to include in model training (1000 would be enough for a test run);
     3. set parameter *lr*: learning rate;
     4. set parameter *num_epochs* and *batch_size*: number of epochs and batch size;
     5. set parameter *ebd_dim*: number of Encoder Layers;
