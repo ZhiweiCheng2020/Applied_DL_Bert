@@ -4,18 +4,21 @@ Applying BERT in Protein Classification
 
 - This is a couse project (Applied Deep Learning) provided by LMU. The project is supervised by Emilio Dorigatti.
 
-- The protein sequence order determines their properties. Therefore, we can use the sequantial information to classify the proteins.
+- The protein sequence order determines their properties. Therefore, we can use the sequantial information to classify the proteins. If we treat each component as the letter/word in text, the protein classification is similar to text classification problem. 
 
-- If we treat each component as the letter/word in text, the protein classification is similar to text classification problem. 
-
-- In this project, we applied a well-know NLP model, BERT (https://arxiv.org/abs/1810.04805), to dig information from protein sequences and predict their types.
+- In this project, we applied a well-know NLP model, BERT (https://arxiv.org/abs/1810.04805), to dig information from protein sequences and predict their types. We mask the protein sequence the same way as in BERT, and we have two goals in model training:
+    1. Reduce the error in predicting the masked taken;
+    2. 
+- We use 15% of data for testing, in the rest 85%, we use 80% for model training, 20% for model validation.
 
 - How to run the code:
-    1. find and open the script: src\train.py
-    2. set parameter *len_all*: the number of seqs you wuold like to include in model training
-    3. set parameter *lr*: learning rate
-    3. set parameter *num_epochs* and *batch_size*: number of epochs and batch size
-    3. set parameter *ebd_dim*:
+    1. find and open the script: src\train.py (https://github.com/ZhiweiCheng2020/Applied_DL_Bert/blob/main/src/train.py);
+    2. set parameter *len_all*: the number of seqs you would like to include in model training;
+    3. set parameter *lr*: learning rate;
+    4. set parameter *num_epochs* and *batch_size*: number of epochs and batch size;
+    5. set parameter *ebd_dim*: number of Encoder Layers;
+    6. set parameter *num_head*: number of heads in Multi-Head Attention;
+    7. You are off to go! run *train.py* under the project root path, you will find out the model perfermance under folder */results*, and the trained model is saved under folder */models*.
 
 
 Project Organization
