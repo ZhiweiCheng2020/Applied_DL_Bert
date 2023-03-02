@@ -4,6 +4,7 @@ import random
 import torch
 import sys
 import os
+os.environ['PYTHONHASHSEED']=str(42)
 from torch.utils.data import Dataset
 torch.random.manual_seed(42)
 np.random.seed(42)

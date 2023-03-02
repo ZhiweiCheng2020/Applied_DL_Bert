@@ -161,3 +161,5 @@ class Bert(nn.Module):
         code2_pred = nn.LogSoftmax(dim=-1)(self.linear2(NSP)) # code2
         
         return MaskedLM, code0_pred, code1_pred, code2_pred
+
+
