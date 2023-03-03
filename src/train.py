@@ -27,12 +27,12 @@ from models.utils import compute_loss
 from models.utils import EarlyStopper 
 
 
-# len_all = 13478 # the length of the whole dataset
-len_all = 1000 # the length of the whole dataset
+len_all = 13478 # the length of the whole dataset
+# len_all = 1000 # the length of the whole dataset
 
 # training parameters
-lr=0.005 #learning rate
-num_epochs = 5
+lr=0.001 #learning rate
+num_epochs = 100
 batch_size = 64
 verbose = True # if show training process
 
@@ -83,8 +83,8 @@ Bert_model = bert.Bert(ebd_dim=ebd_dim, num_head=num_head, vocab_size=vocab_size
                         feedforward_dim=feedforward_dim,
                         num_layer=num_layer, max_seq_len=max_seq_len)
 optimizer = optim.Adam(Bert_model.parameters(), lr=lr)
-scheduler = ExponentialLR(optimizer=optimizer, gamma=0.95, verbose=verbose)
-early_stopper = EarlyStopper(patience=5, min_delta=0.05)
+scheduler = ExponentialLR(optimizer=optimizer, gamma=0.98, verbose=verbose)
+early_stopper = EarlyStopper(patience=3, min_delta=0.0001)
 
 
 for epoch in range(num_epochs):
@@ -117,7 +117,7 @@ for epoch in range(num_epochs):
     train_loss_history.append(epoch_train_loss)
     
     # start reducing learning rate exponentially after some epochs
-    if epoch > 15:
+    if epoch > 10:
         scheduler.step()
         
     # get learning rate
@@ -170,13 +170,13 @@ for epoch in range(num_epochs):
             test_code0_loss += loss_code0.item()
             test_code1_loss += loss_code1.item()
             
-            if ((i+1) % 10 == 0) and verbose:
-                num_iters = math.ceil(len(test_dataset)/batch_size)
-                print(f'Epoch: {epoch+1}/{num_epochs}, Step {i+1}/{num_iters}, test loss,\
-                    loss_maskLM: {loss_maskLM.item():.3f}\
-                        loss_code0: {loss_code0.item():.3f}\
-                            loss_code1: {loss_code1.item():.3f}'
-                            )
+            # if ((i+1) % 10 == 0) and verbose:
+            #     num_iters = math.ceil(len(test_dataset)/batch_size)
+            #     print(f'Epoch: {epoch+1}/{num_epochs}, Step {i+1}/{num_iters}, test loss,\
+            #         loss_maskLM: {loss_maskLM.item():.3f}\
+            #             loss_code0: {loss_code0.item():.3f}\
+            #                 loss_code1: {loss_code1.item():.3f}'
+            #                 )
     # record train loss
     epoch_test_loss = test_loss/len(test_loader)
     test_loss_history.append(epoch_test_loss)
