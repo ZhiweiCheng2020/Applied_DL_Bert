@@ -24,8 +24,8 @@ from models.utils import compute_loss
 from models.utils import EarlyStopper 
 
 # data set size
-len_all = 13478 # the length of the whole dataset
-# len_all = 1000 # the length of the whole dataset
+len_all = 13478 # the whole dataset
+# len_all = 1000 # a subset of 1000
 
 # training parameters
 lr=0.001 #learning rate
@@ -102,7 +102,7 @@ for epoch in range(num_epochs):
             code0.squeeze(1), code1.squeeze(1), code2.squeeze(1)
         # train the model
         optimizer.zero_grad()
-        MaskedLM, code0_pred, code1_pred, code2_pred = Bert_model(input=token_data, padding_mask=padding_mask)
+        MaskedLM, code0_pred, code1_pred, code2_pred, _ = Bert_model(input=token_data, padding_mask=padding_mask)
         # masked token prediction
         curr_loss,_,_,_ = compute_loss(mask_pos_data, mask_token_data, MaskedLM, 
                  code0, code0_pred,
@@ -129,7 +129,7 @@ for epoch in range(num_epochs):
             token_data, mask_pos_data, mask_token_data, padding_mask, code0, code1, code2 = token_data.squeeze(1), \
             mask_pos_data.squeeze(1), mask_token_data.squeeze(1), padding_mask.squeeze(1),\
                 code0.squeeze(1), code1.squeeze(1), code2.squeeze(1)
-            MaskedLM, code0_pred, code1_pred, code2_pred = Bert_model(input=token_data, padding_mask=padding_mask)
+            MaskedLM, code0_pred, code1_pred, code2_pred, _ = Bert_model(input=token_data, padding_mask=padding_mask)
             # masked token prediction
             curr_loss,_,_,_ = compute_loss(mask_pos_data, mask_token_data, MaskedLM, 
                                 code0, code0_pred,
@@ -158,7 +158,7 @@ for epoch in range(num_epochs):
             token_data, mask_pos_data, mask_token_data, padding_mask, code0, code1, code2 = token_data.squeeze(1), \
             mask_pos_data.squeeze(1), mask_token_data.squeeze(1), padding_mask.squeeze(1),\
                 code0.squeeze(1), code1.squeeze(1), code2.squeeze(1)
-            MaskedLM, code0_pred, code1_pred, code2_pred = Bert_model(input=token_data, padding_mask=padding_mask)
+            MaskedLM, code0_pred, code1_pred, code2_pred, _ = Bert_model(input=token_data, padding_mask=padding_mask)
             # masked token prediction
             curr_loss, loss_maskLM, loss_code0, loss_code1 = compute_loss(mask_pos_data, mask_token_data, MaskedLM, 
                                 code0, code0_pred,
