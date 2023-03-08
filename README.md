@@ -20,11 +20,16 @@ Applying BERT in Protein Classification
     5. set parameter *ebd_dim*: number of Encoder Layers;
     6. set parameter *num_head*: number of heads in Multi-Head Attention;
     7. You are off to go! run *train.py* under the project root path, you will find out the model performance under folder */results*, and the trained model is saved under folder *models/*.
+    [TrainValTestloss_13478_seqs_100_epochs_4_heads_4_layers.pdf](https://github.com/ZhiweiCheng2020/Applied_DL_Bert/files/10925653/TrainValTestloss_13478_seqs_100_epochs_4_heads_4_layers.pdf)
+
+    [Testloss_13478_seqs_100_epochs_4_heads_4_layers.pdf](https://github.com/ZhiweiCheng2020/Applied_DL_Bert/files/10925654/Testloss_13478_seqs_100_epochs_4_heads_4_layers.pdf)
+
     
 - We can also visualize the BERT embedding by reducing dimensions with the UMAP method. To run the visualization, please do the following after the training:
     1. run *src/visualisation/prepare_umap_data.py*; which feeds the whole dataset to the trained model and saves the embedding to a pickle file;
     2. in script *src/visualisation/umap_plot.py*, change the parameter *plot_dim* (the dimension of the UMAP plot), then run the script, and the plot is saved under folder *results/*.
 
+[umap_2_dim.pdf](https://github.com/ZhiweiCheng2020/Applied_DL_Bert/files/10925655/umap_2_dim.pdf)
 
 
 Project Organization
