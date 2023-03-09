@@ -23,7 +23,7 @@ Applying BERT in Protein Classification
     
 - We can also visualize the BERT embedding by reducing dimensions with the UMAP method. To run the visualization, please do the following after the training:
     1. run *src/visualisation/prepare_umap_data.py*; which feeds the whole dataset to the trained model and saves the embedding to a pickle file;
-    2. in script *src/visualisation/umap_plot.py*, change the parameter *plot_dim* (the dimension of the UMAP plot), then run the script, and the plot is saved under folder *results/*.
+    2. run script *src/visualisation/umap_plot.py*, and the plots are saved under folder *results/*.
 
 Project Organization
 ------------
