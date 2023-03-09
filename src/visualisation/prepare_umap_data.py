@@ -42,7 +42,7 @@ with torch.no_grad():
         token_data, mask_pos_data, mask_token_data, padding_mask, code0, code1, code2 = token_data.squeeze(1), \
         mask_pos_data.squeeze(1), mask_token_data.squeeze(1), padding_mask.squeeze(1),\
             code0.squeeze(1), code1.squeeze(1), code2.squeeze(1)
-        MaskedLM, code0_pred, code1_pred, NSP = Bert_model(input=token_data, padding_mask=padding_mask)
+        MaskedLM, code0_pred, code1_pred, _, NSP = Bert_model(input=token_data, padding_mask=padding_mask)
         curr_loss, loss_maskLM, loss_code0, loss_code1 = compute_loss(mask_pos_data, mask_token_data, MaskedLM, 
                             code0, code0_pred,
                             code1, code1_pred,
@@ -60,5 +60,7 @@ with torch.no_grad():
 # save embedding for future visulisation
 with open(os.path.join(curr_path, "models", "bert_ebd.pkl"), "wb") as f:
     pickle.dump([NSP_ebd, code0_int, code1_int], f)    
-    
+    print("----UMAP data preparation - complete!-------")
+
+
 
