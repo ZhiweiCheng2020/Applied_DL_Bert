@@ -13,8 +13,8 @@ g.manual_seed(42)
 import copy
 import re
 import torch.nn.functional as F
-curr_path = os.getcwd()
-sys.path.insert(0, os.path.dirname(curr_path))
+# curr_path = os.getcwd()
+# sys.path.insert(0, os.path.dirname(curr_path))
 
 # create our dataset
 class TokenTransform:

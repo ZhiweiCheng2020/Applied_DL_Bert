@@ -7,9 +7,8 @@ import umap
 import numpy as np
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-curr_path = os.getcwd()
+curr_path = os.path.dirname(os.getcwd())
 sys.path.append(curr_path)
-sys.path.insert(0, os.path.join(curr_path, "src"))
 import src.data.data_preprocess as preprocess
 import src.models.bert as bert 
 from src.models.utils import compute_loss 
@@ -56,7 +55,7 @@ def create_umap(chosen_code, plot_dim):
         # show plot
         plt.savefig(os.path.join(curr_path, "results", 
             chosen_code+"_umap_3_dim.pdf"), dpi=150)
-        plt.show()
+        # plt.show()
 
     elif plot_dim == 2:
         # Creating 2d plot
@@ -71,14 +70,16 @@ def create_umap(chosen_code, plot_dim):
         plt.title(chosen_code+" - embedding projection by UMAP", fontsize=20)
         plt.savefig(os.path.join(curr_path, "results", 
             chosen_code+"_umap_2_dim.pdf"), dpi=150)
-        plt.show()
+        # plt.show()
         
     else:
         raise Exception("plot_dim can only be 2 or 3")
 
-
-if __name__ == "__main__":
+def get_all_umap():
     create_umap(chosen_code="code0", plot_dim=2)
     create_umap(chosen_code="code0", plot_dim=3)
     create_umap(chosen_code="code1", plot_dim=2)
     create_umap(chosen_code="code1", plot_dim=3)
+    
+if __name__ == "__main__":
+    get_all_umap()
