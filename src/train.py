@@ -39,9 +39,10 @@ def train_model(
     
     feedforward_dim = ebd_dim * 4  # 4*ebd_dim, FeedForward dimension
     # split the data to train (0.85*0.8), validation (0.85*0.2), and test (0.15) sets
+    all_idx = random.sample(range(0, 13478), len_all)
     test_set_size = int(len_all * 0.15)
-    test_idx = random.sample(range(0, len_all), test_set_size)
-    train_val_idx = list(set(list(range(len_all))) - set(test_idx))
+    test_idx = random.sample(all_idx, test_set_size)
+    train_val_idx = list(set(list(all_idx)) - set(test_idx))
     test_dataset = preprocess.seq_dataset(data_path=os.path.join(curr_path, 
                                                 "data", "protein_data.csv"), 
                                         seqs_range = test_idx, seed=42)
@@ -165,14 +166,6 @@ def train_model(
                 test_MLM_loss += loss_maskLM.item()
                 test_code0_loss += loss_code0.item()
                 test_code1_loss += loss_code1.item()
-                
-                # if ((i+1) % 10 == 0) and verbose:
-                #     num_iters = math.ceil(len(test_dataset)/batch_size)
-                #     print(f'Epoch: {epoch+1}/{num_epochs}, Step {i+1}/{num_iters}, test loss,\
-                #         loss_maskLM: {loss_maskLM.item():.3f}\
-                #             loss_code0: {loss_code0.item():.3f}\
-                #                 loss_code1: {loss_code1.item():.3f}'
-                #                 )
                 
         # record test loss
         epoch_test_loss = test_loss/len(test_loader)

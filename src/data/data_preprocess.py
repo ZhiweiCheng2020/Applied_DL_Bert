@@ -98,14 +98,13 @@ class TokenTransform:
 
 class seq_dataset(Dataset):
     def __init__(self, data_path, 
-                 seqs_range = list(range(100)),
+                 seqs_range,
                  seed = 42,
                  transform = TokenTransform(),):
         self.seed = seed # the seed for random.shuffle
         random.seed(self.seed)
         df = pd.read_csv(data_path, index_col=0)
-        if max(seqs_range) < df.shape[0]:
-            df = df.iloc[seqs_range, :]
+        df = df.iloc[seqs_range, :]
         df.reset_index(inplace=True)
         self.code0 = df["code0"].to_list()    
         self.code1 = df["code1"].to_list()    

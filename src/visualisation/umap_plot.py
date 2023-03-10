@@ -25,7 +25,6 @@ def create_umap(chosen_code, plot_dim):
     if chosen_code == "code0":
         code_indicator = code0_int
     elif chosen_code == "code1":
-        # code_indicator = [str(code0_int[i])+"-"+str(code1_int[i]) for i in range(len(code0_int))]
         code_indicator = [100*(code0_int[i]+1)+code1_int[i] for i in range(len(code0_int))]
     else:
         raise Exception("please choose the correct code type: code0 or code1")
