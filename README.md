@@ -13,7 +13,7 @@ Applying BERT in Protein Classification
 - We use 15% of the data for testing, in the rest 85%, we use 80% for model training, and 20% for model validation. We also visualize the BERT embedding by reducing dimensions with the UMAP method.
 
 - How to run the model:
-    1. set up the virtual environment;
+    1. set up the virtual environment (python version: 3.9.*);
     2. open the terminal and change to folder: *cd src*;
     3. in the terminal, enter: *python main.py --help*, you will see the parameters definition;
     4. all parameters have default values, in case you want to modify the parameter value, please enter: *python main.py --\<param name\> \<param value\>*;
