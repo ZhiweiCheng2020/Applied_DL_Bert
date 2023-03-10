@@ -10,20 +10,17 @@ Applying BERT in Protein Classification
     1. Reduce the error in predicting the masked token;
     2. Reduce the loss in protein type prediction.
     
-- We use 15% of the data for testing, in the rest 85%, we use 80% for model training, and 20% for model validation. After training 
+- We use 15% of the data for testing, in the rest 85%, we use 80% for model training, and 20% for model validation. We also visualize the BERT embedding by reducing dimensions with the UMAP method.
 
-- How to train the model:
-    1. find and open the script: *src/train.py*;
-    2. set parameter *len_all*: the number of sequences you would like to include in model training (1000 would be enough for a test run);
-    3. set parameter *lr*: learning rate;
-    4. set parameter *num_epochs* and *batch_size*: number of epochs and batch size;
-    5. set parameter *ebd_dim*: number of Encoder Layers;
-    6. set parameter *num_head*: number of heads in Multi-Head Attention;
-    7. You are off to go! run *train.py* under the project root path, you will find out the model performance under folder */results*, and the trained model is saved under folder *models/*.
+- How to run the model:
+    1. set up the virtual environment;
+    2. open the terminal and change to folder: *cd src*;
+    3. in the terminal, enter: *python main.py --help*, you will see the parameters definition;
+    4. all parameters have default values, in case you want to modify the parameter value, please enter: *python main.py --\<param name\> \<param value\>*;
+    5. for example, to pass values for learning rate and number of batches, enter:  *python main.py --lr 0.005 --num_epochs 100*;
+    6. to keep the default values, simply enter:  *python main.py*;
     
-- We can also visualize the BERT embedding by reducing dimensions with the UMAP method. To run the visualization, please do the following after the training:
-    1. run *src/visualisation/prepare_umap_data.py*; which feeds the whole dataset to the trained model and saves the embedding to a pickle file;
-    2. run script *src/visualisation/umap_plot.py*, and the plots are saved under folder *results/*.
+- After the run is finished, the model performance and the umap clustering plots are under folder */results*, and the trained model is saved under folder */models*.
 
 Project Organization
 ------------
@@ -32,7 +29,7 @@ Project Organization
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
     ├── README.md          <- The top-level README for developers using this project.
     ├── data
-    │   ├── external       <- Data from third party sources.
+    │   ├── external       <- Data from third-party sources.
     │   ├── interim        <- Intermediate data that has been transformed.
     │   ├── processed      <- The final, canonical data sets for modeling.
     │   └── raw            <- The original, immutable data dump.
